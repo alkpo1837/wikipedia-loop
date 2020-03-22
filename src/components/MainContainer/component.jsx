@@ -8,11 +8,9 @@ import SearchResults from '../SearchResults';
 const BASE_API_URL = 'https://fr.wikipedia.org/w/api.php?';
 const REQUEST = 'rvprop=content&action=query&prop=revisions&format=json&origin=*';
 
-const isInsideBrackets2 = (contentPage, idx) => {
+const isInsideBrackets = (contentPage, idx) => {
   let depthBracket = 0;
   let depthSquareBracket = 0;
-
-  // console.log(contentPage.slice(0, idx));
 
   for (let i = 0; i !== idx; i++) {
     if (contentPage[i] === '{' && contentPage[i + 1] === '{') {
@@ -32,18 +30,23 @@ const isInsideBrackets2 = (contentPage, idx) => {
   return depthBracket > 0 || depthSquareBracket > 0;
 };
 
-// const isValidContent = content => {
-//   const forbiddenElements = ['Fichier', 'Image', 'File'];
+const isValidContent = content => {
+  const forbiddenElements = ['Fichier', 'Image', 'File'];
 
-//   forbiddenElements.forEach(element => {
-//     if (content.includes(element)) return false;
-//   });
-//   return true;
-// };
+  for (let i = 0; i < forbiddenElements.length; i++) {
+    if (content.includes(forbiddenElements[i])) return false;
+  }
+  // forbiddenElements.forEach(element => {
+  //   console.log(content + ' vs ' + element);
+  //   if (content.includes(element)) {
+  //     return false;
+  //   }
+  // });
+
+  return true;
+};
 
 const getFirstLink = contentPage => {
-  // console.log(contentPage);
-
   let idxSquareBrackets = 0;
   let currentIdx = 0;
 
@@ -57,11 +60,11 @@ const getFirstLink = contentPage => {
   while (idxSquareBrackets !== -1) {
     let idxSquareBrackets = contentPage.indexOf('[[', currentIdx);
 
-    if (!isInsideBrackets2(contentPage, idxSquareBrackets)) {
+    if (!isInsideBrackets(contentPage, idxSquareBrackets)) {
       const idxEndSquareBrackets = contentPage.indexOf(']]', idxSquareBrackets);
       let content = contentPage.slice(idxSquareBrackets + 2, idxEndSquareBrackets);
 
-      if (!content.includes('Fichier') && !content.includes('Image') && !content.includes('File')) {
+      if (isValidContent(content)) {
         if (content.includes('|')) content = content.split('|')[0];
 
         return content;
@@ -84,32 +87,21 @@ const MainContainer = () => {
   const onSearchButtonClicked = () => {
     setLinksFounds([currentInput]);
     setIsQueryFinished(false);
-    // executeQuery(currentInput);
   };
 
   const executeQuery = useCallback(
     async currentInput => {
-      console.log('Lancer la query avec ' + currentInput);
-      console.log(linksFound);
-
       const response = await axios.get(BASE_API_URL + REQUEST + `&titles=${currentInput}`);
-
-      console.log(response);
       const pages = response.data.query.pages;
 
-      console.log(pages);
-
-      if (Object.keys(pages).includes('-1')) {
+      let pageId = Object.keys(pages)[0];
+      if (pageId === '-1') {
         setQueryErrorText("Erreur : cette page n'existe pas");
       } else {
-        let pageId = Object.keys(pages)[0];
-
         const firstLink = getFirstLink(pages[pageId].revisions[0]['*']);
 
         if (!linksFound.includes(firstLink)) {
           setLinksFounds(linksFound.concat(firstLink));
-
-          console.log('Linksound length = ' + linksFound.length);
         } else {
           setIsQueryFinished(true);
           setLinksFounds(linksFound.concat(firstLink));
