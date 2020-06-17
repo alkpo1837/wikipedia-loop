@@ -31,17 +31,13 @@ const isInsideBrackets = (contentPage, idx) => {
 };
 
 const isValidContent = content => {
-  const forbiddenElements = ['Fichier', 'Image', 'File'];
+  const forbiddenElements = ['Fichier', 'Image', 'File', 'wikt'];
+
+  console.log(('Content is ' + content));
 
   for (let i = 0; i < forbiddenElements.length; i++) {
     if (content.includes(forbiddenElements[i])) return false;
   }
-  // forbiddenElements.forEach(element => {
-  //   console.log(content + ' vs ' + element);
-  //   if (content.includes(element)) {
-  //     return false;
-  //   }
-  // });
 
   return true;
 };
